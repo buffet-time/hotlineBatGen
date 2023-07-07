@@ -1,115 +1,114 @@
 <script setup lang="ts">
 import { open } from '@tauri-apps/api/dialog'
-import { BaseDirectory, writeTextFile } from '@tauri-apps/api/fs'
 import { computed, ref } from 'vue'
+import { generateBatFile } from './bat'
 
 const copyIn = ref(false)
+const showFinished = ref(false)
 const myGamesHmSave = ref('')
 const copyInHmSave = ref('')
 const showGenerateButton = computed(() => {
-	if (copyIn.value && myGamesHmSave && copyInHmSave) {
-		return true
-	} else if (myGamesHmSave.value) {
+	if (copyIn.value) {
+		if (myGamesHmSave.value && copyInHmSave.value) {
+			return true
+		}
+		return false
+	}
+	if (myGamesHmSave.value) {
 		return true
 	}
 	return false
 })
 
-function generateBat(deleteFile: string, copyIn: boolean, copyFile?: string) {
-	if (copyIn && copyFile) {
-		return `@ECHO OFF\ndel "${deleteFile}"\ncopy "${copyIn}" "${deleteFile}"`
-	}
-
-	// just delete
-	return `@ECHO OFF\ndel "${deleteFile}"`
-}
-
-async function openFile() {
+async function openDirectory() {
 	const selected = await open({
-		multiple: false,
-		filters: [
-			{
-				name: 'Hotline Save File',
-				extensions: ['sav']
-			}
-		],
-		defaultPath: 'C:/Users/%userprofile%/Documents/My Games/HotlineMiami'
+		directory: true,
+		defaultPath: 'C:/Users/%userprofile%/Documents/My Games'
 	})
 	if (selected && typeof selected === 'string') {
-		// console.log(selected)
 		return selected
 	}
 	return ''
 }
 
 async function hotlineSaveFileClicked() {
-	myGamesHmSave.value = await openFile()
+	myGamesHmSave.value = await openDirectory()
 }
 
 async function copyInFileClicked() {
-	copyInHmSave.value = await openFile()
+	copyInHmSave.value = await openDirectory()
 }
 
-async function generateBatFile() {
-	if (copyIn.value) {
-		await writeTextFile(
-			'hotlineMiamiBatJustDelete.bat',
-			generateBat(myGamesHmSave.value, true, copyInHmSave.value),
-			{ dir: BaseDirectory.Download }
-		)
-	} else {
-		await writeTextFile(
-			'hotlineMiamiBatDeleteAndCopy.bat',
-			generateBat(myGamesHmSave.value, false),
-			{
-				dir: BaseDirectory.Download
-			}
-		)
-	}
+async function generateClicked() {
+	await generateBatFile(copyIn.value, myGamesHmSave.value, copyInHmSave.value)
+	showFinished.value = true
 }
 </script>
 
 <template>
 	<div class="tw-flex-col h-[100vh] items-center justify-center gap-5 p-4">
-		<div>
-			<input v-model="copyIn" type="checkbox" />
-			<label>Copy in an existing save file?</label>
+		<div class="flex items-center">
+			<input v-model="copyIn" type="checkbox" class="tw-checkbox" />
+			<label class="ml-2">Copy in an existing save file?</label>
 		</div>
 
-		<div class="tw-flex-col items-center">
-			<label
-				>Example: C:\Users\buffet\Documents\My
-				Games\HotlineMiami\SaveData.sav</label
-			>
+		<div class="tw-card-div">
+			<div class="tw-highlted-text-div">
+				Example:
+				<p class="tw-highlighted-text">
+					C:\Users\buffet\Documents\My Games\HotlineMiami
+				</p>
+			</div>
+
 			<button
-				class="tw-button mt-2"
+				class="tw-button"
 				@click="hotlineSaveFileClicked"
 				@submit="hotlineSaveFileClicked"
 			>
-				Hotline Miami save file
+				Hotline Miami save folder
 			</button>
+			<div v-if="myGamesHmSave" class="tw-highlted-text-div">
+				Folder selected:
+				<p class="tw-highlighted-text">
+					{{ myGamesHmSave }}
+				</p>
+			</div>
 		</div>
 
-		<div v-if="copyIn" class="tw-flex-col">
-			<label>Example: F:\Games\Hotline\</label>
+		<div v-if="copyIn" class="tw-card-div">
+			<div class="tw-highlted-text-div">
+				Example:
+				<p class="tw-highlighted-text">F:\Games\Hotline\ngPlusNoCharlie</p>
+			</div>
 			<button
-				class="tw-button mt-2"
+				class="tw-button"
 				@click="copyInFileClicked"
 				@submit="copyInFileClicked"
 			>
-				Pre-existing save file
+				Pre-existing save folder
 			</button>
+			<div v-if="copyInHmSave" class="tw-highlted-text-div">
+				Folder selected:
+
+				<p class="tw-highlighted-text">
+					{{ copyInHmSave }}
+				</p>
+			</div>
 		</div>
 
-		<div v-if="showGenerateButton" class="tw-flex-col">
+		<div v-if="showGenerateButton" class="tw-card-div">
 			<label>Downloaded to your download folder</label>
 			<button
 				class="tw-button"
-				@click="generateBatFile"
-				@submit="generateBatFile"
+				@click="generateClicked"
+				@submit="generateClicked"
 			>
 				Generate Bat file
 			</button>
 		</div>
+
+		<p v-if="showFinished" class="tw-card font-bold text-green-500">
+			Bat file created!
+		</p>
 	</div>
 </template>
