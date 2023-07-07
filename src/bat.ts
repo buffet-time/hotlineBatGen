@@ -6,7 +6,7 @@ function generateBat(
 	copyDirectory?: string
 ) {
 	if (copyIn && copyDirectory) {
-		return `@ECHO OFF\ndel "${hotlineDirectory}"\ncopy "${copyDirectory}\\SaveData.sav" "${hotlineDirectory}\\"`
+		return `@ECHO OFF\ndel "${hotlineDirectory}\\SaveData.sav"\ncopy "${copyDirectory}\\SaveData.sav" "${hotlineDirectory}\\"`
 	}
 
 	// just delete
